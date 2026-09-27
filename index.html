@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANC Calculator App</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Nepali Datepicker v5.0.6 CSS -->
+    <link href="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css" rel="stylesheet">
+    
+    <!-- html2pdf Bundle -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body { 
+            background: #eef2f5; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding-bottom: 30px;
+        }
+        .app-container { 
+            max-width: 680px; 
+            margin: 30px auto; 
+            background: #ffffff; 
+            border-radius: 18px;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.1); 
+            padding: 24px; 
+            min-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .custom-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .btn-primary { background-color: #0d6efd; border: none; border-radius: 8px; }
+        .btn-success { background-color: #198754; border: none; border-radius: 8px; }
+        .form-control { border-radius: 8px; padding: 10px; border: 1px solid #cbd5e1; }
+
+        /* Table Styling */
+        .styled-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.08);
+            border: 1px solid #cfe2ff !important;
+            width: 100%;
+        }
+        .styled-table thead tr {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: #ffffff;
+        }
+        .styled-table th {
+            padding: 12px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .styled-table td {
+            padding: 12px 10px;
+            font-size: 13px;
+            border-bottom: 1px solid #e9ecef !important;
+            border-top: none !important;
+            vertical-align: middle;
+            background-color: #ffffff;
+        }
+        .styled-table tbody tr:nth-of-type(even) td {
+            background-color: #f8fafc;
+        }
+        .styled-table tbody tr:last-of-type td {
+            border-bottom: none !important;
+        }
+        .styled-table tbody tr:hover td {
+            background-color: #eef2ff;
+        }
+        .visit-badge {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Footer credit */
+        .footer-credit { 
+            text-align: center; 
+            font-size: 12px; 
+            color: #777777; 
+            margin-top: 25px; 
+            border-top: 1px solid #f1f1f1;
+            padding-top: 12px;
+            font-weight: 600;
+        }
+
+        /* PDF Slip Formatting - Optimized padding to prevent bottom cut-off */
+        #pdfSlipTemplate {
+            padding: 15px;
+            background: #ffffff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .slip-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 10px; }
+        .slip-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .slip-table th { background-color: #0d6efd; color: #ffffff; border: 1px solid #0a58ca; padding: 5px; text-align: center; font-size: 12px; }
+        .slip-table td { border: 1px solid #cbd5e1; padding: 5px; text-align: center; font-size: 12px; }
+        .slip-table tr:nth-child(even) { background-color: #f8fafc; }
+        .quote-box { margin-top: 10px; font-style: italic; font-weight: bold; text-align: center; border: 1px dashed #0d6efd; background: #f0f7ff; padding: 6px; font-size: 12px; border-radius: 6px; color: #0d6efd; }
+        .anc-schedule-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div>
+        <!-- SCREEN 1: Home Dashboard -->
+        <div id="screen-1" class="screen active">
+            <!-- Top Header with Title and Top-Right Settings Button -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="m-0 fw-bold text-primary"><i class="fa-solid fa-baby-carriage me-2"></i>ANC Calculator</h3>
+                <button class="btn btn-outline-primary btn-sm px-3 py-2 fw-bold shadow-sm" onclick="openSettingsModal()">
+                    <i class="fa-solid fa-gear me-1"></i> Settings
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search Patient by Name or Reg. No..." onkeyup="searchPatients()">
+            </div>
+
+            <button class="btn btn-primary btn-lg w-100 mb-3 fw-bold py-3" onclick="goToScreen(2)">
+                <i class="fa-solid fa-plus me-1"></i> Add New Patient
+            </button>
+
+            <div class="custom-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-secondary">Dashboard Summary</span>
+                </div>
+                <div class="row text-center pt-2">
+                    <div class="col-6 border-end">
+                        <small class="text-muted">Total Registered</small>
+                        <h3 class="m-0 fw-bold text-primary" id="stat-total">0</h3>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Today (BS)</small>
+                        <h5 class="m-0 fw-bold pt-2 text-dark" id="stat-today-bs">---</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-card">
+                <h5 class="fw-bold mb-3 text-secondary">Recent Patient Records</h5>
+                <div class="table-responsive">
+                    <table class="table styled-table text-center align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Reg No.</th>
+                                <th>Patient Name</th>
+                                <th>LMP</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentPatientList">
+                            <tr>
+                                <td colspan="4" class="text-muted text-center py-3">No patients registered yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: Add New (LMP Input) -->
+        <div id="screen-2" class="screen">
+            <button class="btn btn-sm btn-outline-secondary mb-3" onclick="goToScreen(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <div class="custom-card text-center py-4">
+                <h4 class="fw-bold mb-3">Select LMP Date (BS)</h4>
+                <div class="mb-3">
+                    <input type="text" id="inputLmp" class="form-control form-control-lg text-center nepali-datepicker" placeholder="YYYY-MM-DD" readonly>
+                </div>
+                <button class="btn btn-success btn-lg w-100 fw-bold py-3" onclick="processLmpInput()">Calculate Schedule <i class="fa-solid fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: Result & ANC Schedule -->
+        <div id="screen-3" class="screen">
+            <button class="btn btn-sm btn-outline-secondary mb-2" onclick="goToScreen(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            
+            <div class="custom-card bg-light">
+                <div class="d-flex justify-content-between mb-1"><strong>LMP Date:</strong> <span id="resLmp">---</span></div>
+                <div class="d-flex justify-content-between mb-1"><strong>Gestation Age:</strong> <span id="resGestation" class="text-success fw-bold">---</span></div>
+                <div class="d-flex justify-content-between"><strong>EDD:</strong> <span id="resEdd" class="text-primary fw-bold">---</span></div>
+            </div>
+
+            <h5 class="fw-bold text-secondary mb-2">ANC Visits Schedule (Nepal Protocol)</h5>
+            <div class="table-responsive mb-3">
+                <table class="table styled-table text-center align-middle">
+                    <thead>
+                        <tr>
+                            <th>Visit</th>
+                            <th>Weeks</th>
+                            <th>Date / Range (BS)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ancScheduleTable"></tbody>
+                </table>
+            </div>
+
+            <div class="mb-3">
+                <button class="btn btn-primary btn-lg w-100 fw-bold py-3" onclick="goToScreen(4)">
+                    <i class="fa-solid fa-save me-1"></i> Continue to Save Record
+                </button>
+            </div>
+
+            <!-- Manual Gestation Check -->
+            <div class="custom-card">
+                <h6 class="fw-bold mb-2 text-secondary">Week of Gestation Check</h6>
+                <div class="input-group mb-2">
+                    <input type="text" id="manualCheckDate" class="form-control nepali-datepicker" placeholder="Select Date (BS)" readonly>
+                    <button class="btn btn-outline-primary px-4" onclick="checkManualGestation()">Check</button>
+                </div>
+                <small id="manualResultText" class="text-success fw-bold d-block text-center mt-2"></small>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: Save Patient Details -->
+        <div id="screen-4" class="screen">
+            <button class="btn btn-sm btn-outline-secondary mb-2" onclick="goToScreen(3)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <div class="custom-card">
+                <h4 class="fw-bold mb-3 text-primary">Patient Details</h4>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Register No.</label>
+                    <input type="text" id="pMasterId" class="form-control bg-light fw-bold" readonly>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Patient Name *</label>
+                    <input type="text" id="pName" class="form-control" placeholder="Full Name">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Husband's Name</label>
+                    <input type="text" id="pHusband" class="form-control" placeholder="Husband Name">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Address</label>
+                    <input type="text" id="pAddress" class="form-control" placeholder="Address">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Phone Number</label>
+                    <input type="text" id="pPhone" class="form-control" placeholder="Phone Number">
+                </div>
+                <button class="btn btn-success w-100 btn-lg fw-bold py-3" onclick="savePatientRecord()">Save & Generate Slip</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 5: Download Slip Preview -->
+        <div id="screen-5" class="screen">
+            <div class="d-flex justify-content-between mb-3">
+                <!-- Home Button instead of Back Button -->
+                <button class="btn btn-sm btn-outline-secondary" onclick="goToScreen(1)"><i class="fa-solid fa-house me-1"></i> Home</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-danger btn-sm fw-bold px-3" onclick="deleteCurrentPatient()"><i class="fa-solid fa-trash me-1"></i> Delete</button>
+                    <button class="btn btn-success btn-sm fw-bold px-3" onclick="downloadPdfDirectly()"><i class="fa-solid fa-download me-1"></i> Download PDF</button>
+                </div>
+            </div>
+
+            <div id="pdfSlipTemplate">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="small"><strong>Reg. No:</strong> <span id="slipId">---</span></div>
+                    <div class="small text-end"><strong>Date:</strong> <span id="slipPrintedDate">---</span></div>
+                </div>
+
+                <div class="slip-header mt-1">
+                    <h4 class="m-0 fw-bold" id="slipHospName">PRIMARY HEALTH CENTRE</h4>
+                    <div class="small" id="slipHospAddr">Kakani, Nuwakot, Nepal</div>
+                    <div class="small" id="slipHospPhone">01-XXXXXXX</div>
+                </div>
+
+                <div class="row g-1 mb-2 small">
+                    <div class="col-6"><strong>Name:</strong> <span id="slipName">---</span></div>
+                    <div class="col-6"><strong>Phone:</strong> <span id="slipPhone">---</span></div>
+                    <div class="col-6"><strong>Husband:</strong> <span id="slipHusband">---</span></div>
+                    <div class="col-6"><strong>Address:</strong> <span id="slipAddr">---</span></div>
+                </div>
+
+                <hr class="my-1">
+
+                <div class="mb-1 small">
+                    <div><strong>LMP:</strong> <span id="slipLmp">---</span></div>
+                    <div><strong>EDD:</strong> <span id="slipEdd">---</span></div>
+                </div>
+
+                <div class="anc-schedule-title">ANC Schedule</div>
+                
+                <table class="slip-table">
+                    <thead>
+                        <tr>
+                            <th>Visit</th>
+                            <th>Weeks</th>
+                            <th>Date / Range</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slipAncBody"></tbody>
+                </table>
+
+                <div class="quote-box" id="slipHealthQuote">"Eat healthy and stay healthy for your baby and family"</div>
+
+                <!-- Signature inside PDF template -->
+                <div class="text-end mt-3 pt-1 small" style="font-weight: 600;">
+                    <span id="slipFooterSig">Bnd yadav - Health Assistant</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Centered Footer Credit -->
+    <div class="footer-credit" id="appFooterSig">Bnd yadav - Health Assistant</div>
+</div>
+
+<!-- SETTINGS MODAL (Hospital Name, Address, Phone Only) -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-2 shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Hospital Details</h5>
+                <button type="button" class="btn-close" aria-label="Close" onclick="closeSettingsModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Hospital Name</label>
+                    <input type="text" id="cfgHospName" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Address</label>
+                    <input type="text" id="cfgHospAddr" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Phone No</label>
+                    <input type="text" id="cfgHospPhone" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100 fw-bold py-2" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/bootstrap.bundle.min.js"></script>
+<script src="https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js"></script>
+
+<script>
+    let currentCalc = {};
+    let patientsList = [];
+    let currentScreen = 1;
+    let previousScreen = 1;
+
+    let appSettings = {
+        hospName: "PRIMARY HEALTH CENTRE",
+        hospAddr: "Kakani, Nuwakot, Nepal",
+        hospPhone: "01-XXXXXXX",
+        quote: "Eat healthy and stay healthy for your baby and family",
+        signature: "Bnd yadav - Health Assistant"
+    };
+
+    const SCHEDULE_VISITS = [
+        { v: "1", w: "12", startDays: 84, endDays: 84, isRange: false },
+        { v: "2", w: "16", startDays: 112, endDays: 112, isRange: false },
+        { v: "3", w: "20-24", startDays: 140, endDays: 168, isRange: true },
+        { v: "4", w: "28", startDays: 196, endDays: 196, isRange: false },
+        { v: "5", w: "32", startDays: 224, endDays: 224, isRange: false },
+        { v: "6", w: "34", startDays: 238, endDays: 238, isRange: false },
+        { v: "7", w: "36", startDays: 252, endDays: 252, isRange: false },
+        { v: "8", w: "38-40", startDays: 266, endDays: 280, isRange: true }
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadLocalStorage();
+        initDatepickers();
+        updateTodayDisplay();
+        renderDashboard();
+    });
+
+    function initDatepickers() {
+        setTimeout(() => {
+            const dateInputs = document.querySelectorAll('.nepali-datepicker');
+            dateInputs.forEach(input => {
+                if(input.nepaliDatePicker) {
+                    input.nepaliDatePicker({
+                        ndpYear: true,
+                        ndpMonth: true,
+                        readOnlyInput: true
+                    });
+                }
+            });
+        }, 300);
+    }
+
+    function goToScreen(screenNum) {
+        if(currentScreen !== screenNum) {
+            previousScreen = currentScreen;
+            currentScreen = screenNum;
+        }
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${screenNum}`).classList.add('active');
+    }
+
+    function parseBs(bsStr) {
+        if(!bsStr) return null;
+        const p = bsStr.split('-').map(Number);
+        if(p.length !== 3 || isNaN(p[0]) || isNaN(p[1]) || isNaN(p[2])) return null;
+        return { year: p[0], month: p[1], day: p[2] };
+    }
+
+    function bsToAdDate(bsStr) {
+        const bsObj = parseBs(bsStr);
+        if (!bsObj) return new Date();
+        
+        if (typeof NepaliFunctions !== 'undefined' && NepaliFunctions.BS2AD) {
+            const adObj = NepaliFunctions.BS2AD(bsObj);
+            return new Date(adObj.year, adObj.month - 1, adObj.day);
+        }
+        
+        alert("Date converter library missing!"); 
+        throw new Error("NepaliFunctions not found");
+    }
+
+    function adToBsStr(adDate) {
+        if (typeof NepaliFunctions !== 'undefined' && NepaliFunctions.AD2BS) {
+            const bsObj = NepaliFunctions.AD2BS({
+                year: adDate.getFullYear(),
+                month: adDate.getMonth() + 1,
+                day: adDate.getDate()
+            });
+            return `${bsObj.year}-${String(bsObj.month).padStart(2, '0')}-${String(bsObj.day).padStart(2, '0')}`;
+        }
+        
+        alert("Date converter library missing!"); 
+        throw new Error("NepaliFunctions not found");
+    }
+
+    function addDaysBs(bsStr, days) {
+        const adDate = bsToAdDate(bsStr);
+        adDate.setDate(adDate.getDate() + days);
+        return adToBsStr(adDate);
+    }
+
+    function getTodayBs() {
+        const d = new Date();
+        return adToBsStr(d);
+    }
+
+    function calculateDaysDiff(bs1, bs2) {
+        const d1 = bsToAdDate(bs1);
+        const d2 = bsToAdDate(bs2);
+        const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+        const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+        return Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+    }
+
+    function updateTodayDisplay() {
+        const todayBs = getTodayBs();
+        document.getElementById('stat-today-bs').innerText = todayBs;
+        document.getElementById('slipPrintedDate').innerText = todayBs;
+    }
+
+    function processLmpInput() {
+        const lmp = document.getElementById('inputLmp').value.trim();
+        if(!lmp) {
+            alert("Please select LMP Date from calendar!");
+            return;
+        }
+
+        const edd = addDaysBs(lmp, 280);
+        const todayBs = getTodayBs();
+        
+        const diffDays = Math.max(0, calculateDaysDiff(lmp, todayBs));
+        const weeks = Math.floor(diffDays / 7);
+        const days = diffDays % 7;
+
+        currentCalc = {
+            lmp: lmp,
+            edd: edd,
+            gestation: `${weeks} wks ${days} days`,
+            schedule: SCHEDULE_VISITS.map(item => {
+                let dateDisplay = item.isRange ? 
+                    `<div>${addDaysBs(lmp, item.startDays)}</div><div>${addDaysBs(lmp, item.endDays)}</div>` : 
+                    `<div>${addDaysBs(lmp, item.startDays)}</div>`;
+                return { v: item.v, w: item.w, dateHtml: dateDisplay };
+            })
+        };
+
+        document.getElementById('resLmp').innerText = currentCalc.lmp;
+        document.getElementById('resGestation').innerText = currentCalc.gestation;
+        document.getElementById('resEdd').innerText = currentCalc.edd;
+
+        const tbody = document.getElementById('ancScheduleTable');
+        tbody.innerHTML = '';
+        currentCalc.schedule.forEach(row => {
+            tbody.innerHTML += `<tr><td><span class="visit-badge">${row.v}</span></td><td><strong>${row.w}</strong></td><td>${row.dateHtml}</td></tr>`;
+        });
+
+        document.getElementById('slipLmp').innerText = currentCalc.lmp;
+        document.getElementById('slipEdd').innerText = currentCalc.edd;
+        const slipBody = document.getElementById('slipAncBody');
+        slipBody.innerHTML = '';
+        currentCalc.schedule.forEach(row => {
+            slipBody.innerHTML += `<tr><td>${row.v}</td><td>${row.w}</td><td>${row.dateHtml}</td></tr>`;
+        });
+
+        goToScreen(3);
+    }
+
+    function checkManualGestation() {
+        const mDate = document.getElementById('manualCheckDate').value.trim();
+        if(!mDate || !currentCalc.lmp) {
+            alert("Please select a date!");
+            return;
+        }
+        const diff = calculateDaysDiff(currentCalc.lmp, mDate);
+        const w = Math.floor(diff / 7);
+        const d = diff % 7;
+        document.getElementById('manualResultText').innerText = `Gestational Age: ${w} weeks ${d} days`;
+    }
+
+    function savePatientRecord() {
+        const name = document.getElementById('pName').value.trim();
+        if(!name) { alert("Please enter Patient Name"); return; }
+
+        const record = {
+            masterId: document.getElementById('pMasterId').value,
+            name: name,
+            husband: document.getElementById('pHusband').value,
+            address: document.getElementById('pAddress').value,
+            phone: document.getElementById('pPhone').value,
+            lmp: currentCalc.lmp,
+            edd: currentCalc.edd,
+            schedule: currentCalc.schedule
+        };
+
+        patientsList.unshift(record);
+        saveLocalStorage();
+        
+        applySettingsToUi();
+        document.getElementById('slipId').innerText = record.masterId;
+        document.getElementById('slipName').innerText = record.name;
+        document.getElementById('slipHusband').innerText = record.husband || 'N/A';
+        document.getElementById('slipPhone').innerText = record.phone || 'N/A';
+        document.getElementById('slipAddr').innerText = record.address || 'N/A';
+
+        renderDashboard();
+        goToScreen(5);
+    }
+
+    function deletePatientRecord(id, event) {
+        if (event) event.stopPropagation();
+        if (confirm(`Are you sure you want to delete record (Reg. No: ${id})?`)) {
+            patientsList = patientsList.filter(item => String(item.masterId) !== String(id));
+            saveLocalStorage();
+            renderDashboard();
+        }
+    }
+
+    function deleteCurrentPatient() {
+        const currentId = document.getElementById('slipId').innerText;
+        if (currentId && currentId !== '---') {
+            deletePatientRecord(currentId);
+            goToScreen(1);
+        }
+    }
+
+    function downloadPdfDirectly() {
+        const element = document.getElementById('pdfSlipTemplate');
+        const opt = {
+            margin:       0.2,
+            filename:     `ANC_Record_Reg_${document.getElementById('slipId').innerText}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    // Helper function to calculate the next safe registration number based on MAX ID
+    function getNextRegistrationNumber() {
+        if (patientsList.length === 0) return 1;
+        const numericIds = patientsList
+            .map(p => parseInt(p.masterId, 10))
+            .filter(id => !isNaN(id));
+        if (numericIds.length === 0) return 1;
+        return Math.max(...numericIds) + 1;
+    }
+
+    function renderDashboard() {
+        document.getElementById('stat-total').innerText = patientsList.length;
+        const listEl = document.getElementById('recentPatientList');
+        listEl.innerHTML = '';
+
+        if(patientsList.length === 0) {
+            listEl.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">No patients registered yet.</td></tr>`;
+        } else {
+            patientsList.forEach(p => {
+                listEl.innerHTML += `
+                    <tr class="patient-item">
+                        <td class="fw-bold text-primary">${p.masterId}</td>
+                        <td class="fw-semibold">${p.name}</td>
+                        <td>${p.lmp}</td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                <button class="btn btn-sm btn-outline-primary px-3" onclick="viewPatientSlip('${p.masterId}')">View</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePatientRecord('${p.masterId}', event)"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('pMasterId').value = getNextRegistrationNumber();
+    }
+
+    function viewPatientSlip(id) {
+        const p = patientsList.find(item => String(item.masterId) === String(id));
+        if(!p) return;
+        
+        applySettingsToUi();
+        document.getElementById('slipId').innerText = p.masterId;
+        document.getElementById('slipName').innerText = p.name;
+        document.getElementById('slipHusband').innerText = p.husband || 'N/A';
+        document.getElementById('slipPhone').innerText = p.phone || 'N/A';
+        document.getElementById('slipAddr').innerText = p.address || 'N/A';
+        document.getElementById('slipLmp').innerText = p.lmp;
+        document.getElementById('slipEdd').innerText = p.edd;
+
+        const slipBody = document.getElementById('slipAncBody');
+        slipBody.innerHTML = '';
+        p.schedule.forEach(row => {
+            slipBody.innerHTML += `<tr><td><strong>${row.v}</strong></td><td>${row.w}</td><td>${row.dateHtml}</td></tr>`;
+        });
+
+        goToScreen(5);
+    }
+
+    function searchPatients() {
+        const q = document.getElementById('searchInput').value.toLowerCase().trim();
+        const items = document.querySelectorAll('#recentPatientList .patient-item');
+        items.forEach(el => {
+            const matches = el.innerText.toLowerCase().includes(q);
+            el.classList.toggle('d-none', !matches);
+        });
+    }
+
+    // Modal Controls (Hospital Name, Address, Phone only)
+    function openSettingsModal() {
+        document.getElementById('cfgHospName').value = appSettings.hospName || '';
+        document.getElementById('cfgHospAddr').value = appSettings.hospAddr || '';
+        document.getElementById('cfgHospPhone').value = appSettings.hospPhone || '';
+
+        const modal = document.getElementById('settingsModal');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function closeSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+
+    function saveSettings() {
+        appSettings.hospName = document.getElementById('cfgHospName').value.trim() || appSettings.hospName;
+        appSettings.hospAddr = document.getElementById('cfgHospAddr').value.trim() || appSettings.hospAddr;
+        appSettings.hospPhone = document.getElementById('cfgHospPhone').value.trim() || appSettings.hospPhone;
+
+        applySettingsToUi();
+        localStorage.setItem('anc_app_settings', JSON.stringify(appSettings));
+
+        closeSettingsModal();
+    }
+
+    function applySettingsToUi() {
+        if(document.getElementById('slipHospName')) document.getElementById('slipHospName').innerText = appSettings.hospName;
+        if(document.getElementById('slipHospAddr')) document.getElementById('slipHospAddr').innerText = appSettings.hospAddr;
+        if(document.getElementById('slipHospPhone')) document.getElementById('slipHospPhone').innerText = appSettings.hospPhone;
+        if(document.getElementById('slipHealthQuote')) document.getElementById('slipHealthQuote').innerText = `"${appSettings.quote}"`;
+        if(document.getElementById('appFooterSig')) document.getElementById('appFooterSig').innerText = appSettings.signature;
+        if(document.getElementById('slipFooterSig')) document.getElementById('slipFooterSig').innerText = appSettings.signature;
+    }
+
+    function saveLocalStorage() {
+        localStorage.setItem('anc_patient_db', JSON.stringify(patientsList));
+    }
+
+    function loadLocalStorage() {
+        const pData = localStorage.getItem('anc_patient_db');
+        if(pData) try { patientsList = JSON.parse(pData); } catch(e){}
+
+        const sData = localStorage.getItem('anc_app_settings');
+        if(sData) {
+            try { 
+                const parsed = JSON.parse(sData); 
+                if(parsed) appSettings = { ...appSettings, ...parsed };
+            } catch(e){}
+        }
+
+        applySettingsToUi();
+    }
+</script>
+</body>
+</html>
